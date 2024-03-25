@@ -19,15 +19,18 @@ LOG_MODULE_REGISTER(forte, LOG_LEVEL_DBG);
 #define K_FP_REGS 0
 #endif // K_FP_REGS
 
-
 #define DHCP_OPTION_NTP (42)
 
-static uint8_t ntp_server[4];
+#define ETHERNET 1
 
+#if ETHERNET==1
+
+static uint8_t ntp_server[4];
 static struct net_mgmt_event_callback mgmt_cb;
 
 static struct net_dhcpv4_option_callback dhcp_cb;
 
+#if 0
 static void start_dhcpv4_client(struct net_if *iface, void *user_data)
 {
 	ARG_UNUSED(user_data);
@@ -36,6 +39,8 @@ static void start_dhcpv4_client(struct net_if *iface, void *user_data)
 		net_if_get_by_iface(iface));
 	net_dhcpv4_start(iface);
 }
+#endif
+#endif
 
 #ifdef CONFIG_UPDATE_FORTE_BOOTFILE
 char* bootCmds =
@@ -96,6 +101,7 @@ void forte_fn(void* arg1, void* arg2, void* arg3) {
 	forteGlobalDeinitialize();
 }
 
+#if ETHERNET==1
 static void handler(struct net_mgmt_event_callback *cb,
 	uint32_t mgmt_event,
 	struct net_if *iface)
@@ -148,9 +154,12 @@ static void option_handler(struct net_dhcpv4_option_callback *cb,
 	LOG_INF("DHCP Option %d: %s", cb->option,
 		net_addr_ntop(AF_INET, cb->data, buf, sizeof(buf)));
 }
+#endif
 
 int main(void)
 {
+	printk("Zephyr PLC Application\n");
+#if ETHERNET==1
 	LOG_INF("Run dhcpv4 client");
 
 	net_mgmt_init_event_callback(&mgmt_cb, handler,
@@ -163,8 +172,12 @@ int main(void)
 
 	net_dhcpv4_add_option_callback(&dhcp_cb);
 
-	net_if_foreach(start_dhcpv4_client, NULL);
-
+	//net_if_foreach(start_dhcpv4_client, NULL);
+#else
+	while(1) { 
+		k_sleep(K_MSEC(100));
+	}
+#endif
 	return 0;
 }
 
